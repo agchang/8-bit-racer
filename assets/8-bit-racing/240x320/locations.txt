@@ -1,0 +1,15 @@
+{
+  "end_signal" : [
+    "(25,200,205,225)"
+  ]
+  "start_game": "tap 120 150"
+  "restart_game": "(55, 215)"
+  "score_zone": "(200 5 235 55)"
+  "capture_zone": "(35, 120, 205, 320)"
+  "actions": {
+      "tap_left": "tap 15 290"
+      "tap_right": "tap 225 300"
+      "wait": "noop"
+  }
+}
+
