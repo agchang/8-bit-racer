@@ -85,11 +85,16 @@ class Controller:
         img = Image.open(BytesIO(screen.replace('\r\n', '\n')))
         if verbose:
             elapsed = time.time() - start
-            print 'Took %f secs' % elapsed
+            print 'Took %f secs to get screen' % elapsed
         return img.convert('L')
-    def getPreprocessedScreen(self, screen):
+    def getPreprocessedScreen(self, screen, verbose=False):
+        if verbose:
+            start = time.time()
         screen = screen.crop((35, 120, 205, 320)).resize((84,84))
         assert screen.size == (84,84)
+        if verbose:
+            elapsed = time.time() - start
+            print 'Took %f secs to preprocess' % elapsed
         return screen
     def areScreensSimilar(self, screen1, screen2):
         h = ImageChops.difference(screen1, screen2).histogram()
@@ -99,12 +104,17 @@ class Controller:
         if rms <= self.endRms:
             return True
         return False
-    def isGameover(self, screen):
+    def isGameover(self, screen, verbose=False):
+        if verbose:
+            start = time.time()
         box = screen.crop((25, 200, 205, 225)).convert('L')
-        if self.areScreensSimilar(box, self.endSignal):
-            print 'GAME OVER!'
-            return True
-        return False
+        gameover = self.areScreensSimilar(box, self.endSignal)
+        if verbose:
+            elapsed = time.time() - start
+            print 'Took %f secs to check gameover' % elapsed
+        if gameover:
+            print 'Game over!'
+        return gameover
     def restartGame(self):
         """Restarts the game from a game over state. """
         # New Game
@@ -122,10 +132,12 @@ def combineHistory(history):
     stacked = np.stack(history, axis=0)
     return stacked
 
-def saveSars(i, counter, bestActionName, reward, stateProcessed, newStateProcessed):
+def saveSars(i, counter, bestActionName, q_sa, reward, stateProcessed, newStateProcessed):
     stateProcessed.save('screens/%d-%d-0.png' % (i,counter))
     actionFile = open('screens/%d-%d-action.txt' % (i, counter), 'w', 0)
-    actionFile.write(bestActionName + ',' + str(reward))
+    if q_sa is not None:
+        actionFile.write(str(q_sa) + '\n')
+    actionFile.write(bestActionName + ',' + str(reward) + '\n')
     actionFile.close()
     newStateProcessed.save('screens/%d-%d-1.png' % (i, counter))
 
@@ -163,6 +175,7 @@ def main():
 
             currentHistory.append(stateProcessed)
             combined = None
+            q_sa = None
             if len(currentHistory) == 4:
                 combined = combineHistory(currentHistory).reshape((1, 4, WIDTH, HEIGHT))
 
@@ -171,7 +184,9 @@ def main():
                 print 'Selecting random action'
                 bestAction = random.randint(0,controller.numActions-1)
             else:
+                predictStart = time.time()
                 q_sa = model.predict(combined)
+                print 'Time to predict: %f' % (time.time() - predictStart)
                 print "Q_SA", q_sa
                 bestAction = controller.getActions()[np.argmax(q_sa)]
 
@@ -189,7 +204,7 @@ def main():
             newStateProcessed = controller.getPreprocessedScreen(newState)
             currentHistory.append(newStateProcessed)
             if i % SAVE_SARS_INTERVAL == 0:
-                saveSars(i, counter, bestActionName, reward, stateProcessed, newStateProcessed)
+                saveSars(i, counter, bestActionName, q_sa, reward, stateProcessed, newStateProcessed)
             state = newState
             counter+=1
             print
@@ -228,7 +243,7 @@ def main():
         print 'epsilon = %f' % epsilon
 
         scores.append(str(score))
-        scoresFile.write(str(score) + '\n')
+        #scoresFile.write(str(score) + '\n')
         print 'Score: %d' % score
 
         if i % CHECKPOINT_INTERVAL == 0:

@@ -1,3 +1,4 @@
 *.pyc
 screens/
 scores*
+nohup.out
