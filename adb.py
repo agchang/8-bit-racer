@@ -1,31 +1,31 @@
 import os
 import subprocess
 
-class ADB:
+class ADB(object):
     def __init__(self):
-        self.adbProcess = None
-    def Shell(self, cmd):
+        self.adb_process = None
+    @staticmethod
+    def shell(cmd):
         """Sends a single command by invoking a one-off command.
-        Note you should use self.ShellInteractive for commands that
+        Note you should use self.shell_interactive for commands that
         need to be sent in rapid succession.
         """
         cmds = ['adb', 'shell', cmd]
         return subprocess.check_output(cmds)
-    def OpenShell(self):
+    def open_shell(self):
         """Opens an interactive shell and keeps it the pipe open for
         interactive commands."""
         cmds = ['adb', 'shell']
-        p = subprocess.Popen(cmds, stdin=subprocess.PIPE, \
+        proc = subprocess.Popen(cmds, stdin=subprocess.PIPE, \
             stdout=open(os.devnull, 'wb'), stderr=subprocess.PIPE)
-        self.adbProcess = p
-    def ShellInteractive(self, cmd):
+        self.adb_process = proc
+    def shell_interactive(self, cmd):
         """Pipes command to already open interactive shell. This
         should be used for time-sensitive commands."""
-        if self.adbProcess == None:
-            raise Exception("Shell wasn't opened first!")
+        if self.adb_process is None:
+            raise Exception("shell wasn't opened first!")
         #print cmd
-        self.adbProcess.stdin.write(cmd + '\n')
-        self.adbProcess.stdin.flush()
-    def CloseShell(self):
-        self.adbProcess.kill()
-
+        self.adb_process.stdin.write(cmd + '\n')
+        self.adb_process.stdin.flush()
+    def close_shell(self):
+        self.adb_process.kill()

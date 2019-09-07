@@ -1,8 +1,8 @@
 #!/bin/bash
 
 check_for_sdk_tools() {
-  if ! command -v android; then
-    echo "Missing 'android' tool, please download the Android SDK!"
+  if ! command -v avdmanager; then
+    echo "Missing 'avdmanager' tool, please download the Android SDK!"
     exit 1
   fi
 
@@ -18,8 +18,9 @@ check_for_sdk_tools() {
 }
 
 create_avd_if_necessary() {
-  if ! android list avd | grep 'saki-device' > /dev/null; then
-    android create avd -t "android-21" -b "x86_64" -d "2.7in QVGA" -n "saki-device" -s "240x320"
+  if ! avdmanager list avd | grep '8_bit_racer' > /dev/null; then
+    sdkmanager "system-images;android-21;default;x86_64"
+    avdmanager create avd -d 20 -k 'system-images;android-21;default;x86_64' --name 8_bit_racer
   else
     echo "Found existing avd."
   fi
@@ -27,7 +28,7 @@ create_avd_if_necessary() {
 
 # Starts the emulator and waits for boot completion.
 start_avd() {
-  nohup emulator -avd saki-device &
+  nohup ~/Android/Sdk/emulator/emulator -avd 8_bit_racer &
   local booted
   while [[ -z "${booted}" || "${booted}" != 1 ]]; do
     booted="$(adb shell getprop dev.bootcomplete | tr -d '\r\n')"

@@ -3,7 +3,7 @@
 ## Dependencies
 1. [Android SDK ](https://developer.android.com/studio/index.html)
   - Platform Tools and SDK Tools
-  - Android API 21 Intel x86 Image
+  - Android API 21 Intel x86_64 Image, i.e: "system-images;android-21;default;x86_64"
 
 ## How to run
 1. ./avd.sh
