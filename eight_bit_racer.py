@@ -1,3 +1,4 @@
+import argparse
 import math
 import os
 import random
@@ -6,11 +7,15 @@ from collections import deque
 from io import BytesIO
 
 import numpy as np
+import tensorflow as tf
 from keras.models import load_model
 from PIL import Image, ImageChops
 
 import adb
 import dqn
+
+# Suppress warnings about keras using old TF apis.
+tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
 
 WIDTH = 84
 HEIGHT = 84
@@ -28,7 +33,6 @@ EPSILON = 1
 
 CHECKPOINT_INTERVAL = 500
 SAVE_SARS_INTERVAL = 500
-TRAIN = False
 
 
 class Controller(object):
@@ -66,7 +70,7 @@ class Controller(object):
 
     def score_changed(self, score_zone):
         if not self.are_screens_similar(score_zone, self.score_zone):
-            print 'SCORE CHANGED!'
+            print('SCORE CHANGED!')
             return True
         return False
 
@@ -87,10 +91,11 @@ class Controller(object):
             start = time.time()
         screen = self.adb.shell('screencap -p')
         # ADB shell converts LF to CRLF so undo this.
-        img = Image.open(BytesIO(screen.replace('\r\n', '\n')))
+        img = Image.open(
+            BytesIO(screen.replace('\r\n'.encode(), '\n'.encode())))
         if verbose:
             elapsed = time.time() - start
-            print 'Took %f secs to get screen' % elapsed
+            print('Took %f secs to get screen' % elapsed)
         return img.convert('L')
 
     def get_preprocessed_screen(self, screen, verbose=False):
@@ -100,7 +105,7 @@ class Controller(object):
         assert screen.size == (84, 84)
         if verbose:
             elapsed = time.time() - start
-            print 'Took %f secs to preprocess' % elapsed
+            print('Took %f secs to preprocess' % elapsed)
         return screen
 
     def are_screens_similar(self, screen1, screen2):
@@ -118,9 +123,9 @@ class Controller(object):
         gameover = self.are_screens_similar(box, self.end_signal)
         if verbose:
             elapsed = time.time() - start
-            print 'Took %f secs to check gameover' % elapsed
+            print('Took %f secs to check gameover' % elapsed)
         if gameover:
-            print 'Game over!'
+            print('Game over!')
         return gameover
 
     def restart_game(self):
@@ -141,9 +146,10 @@ def combine_history(history):
     return stacked
 
 
-def save_sars(i, counter, best_action_name, q_sa, reward, state_processed, new_state_processed):
+def save_sars(i, counter, best_action_name, q_sa, reward, state_processed,
+              new_state_processed):
     state_processed.save('screens/%d-%d-0.png' % (i, counter))
-    action_file = open('screens/%d-%d-action.txt' % (i, counter), 'w', 0)
+    action_file = open('screens/%d-%d-action.txt' % (i, counter), 'w')
     if q_sa is not None:
         action_file.write(str(q_sa) + '\n')
     action_file.write(best_action_name + ',' + str(reward) + '\n')
@@ -151,28 +157,32 @@ def save_sars(i, counter, best_action_name, q_sa, reward, state_processed, new_s
     new_state_processed.save('screens/%d-%d-1.png' % (i, counter))
 
 
-def main():
+def main(args):
     controller = Controller()
     # Initialize experience-replay: stores tuples (s, a, r, s')
     experiences = deque([], MAX_EXPERIENCES)
     # Initialize Q* with random weights
     epsilon = EPSILON
 
-    if os.path.exists('model.h5'):
-        print 'Loading model...'
-        model = load_model('model.h5')
+    if args.model_file is not None:
+        if os.path.exists(args.model_file):
+            print('Loading model...')
+            model = load_model(args.model_file)
+        else:
+            raise Exception("Specified a non-existent model file: " +
+                            args.model_file)
     else:
         model = dqn.build_model(INPUT_SHAPE, NUM_ACTIONS)
 
     # Stats to keep track of.
     scores = []
-    scores_file = open('scores.txt', 'w', 0)
+    scores_file = open('scores.txt', 'w')
     begin_time = time.time()
     num_frames = 0
 
     for i in range(NUM_EPISODES):
         controller.restart_game()
-        print 'Episode: %d' % i
+        print('Episode: %d' % i)
         state = controller.get_screen()
         score = 0
         current_history = deque([], 4)
@@ -187,29 +197,30 @@ def main():
             combined = None
             q_sa = None
             if len(current_history) == 4:
-                combined = combine_history(
-                    current_history).reshape((1, 4, WIDTH, HEIGHT))
+                combined = combine_history(current_history).reshape(
+                    (1, 4, WIDTH, HEIGHT))
 
             # Select action based on epsilon-greedy (random or Q*)
-            if ((random.random() < epsilon) and TRAIN) or (combined is None):
-                print 'Selecting random action'
-                best_action = random.randint(0, controller.num_actions-1)
+            if ((random.random() < epsilon)
+                    and args.train) or (combined is None):
+                print('Selecting random action')
+                best_action = random.randint(0, controller.num_actions - 1)
             else:
                 predict_start = time.time()
                 q_sa = model.predict(combined)
-                print 'Time to predict: %f' % (time.time() - predict_start)
-                print "Q_SA", q_sa
+                print('Time to predict: %f' % (time.time() - predict_start))
+                print("Q_SA", q_sa)
                 best_action = controller.get_actions()[np.argmax(q_sa)]
 
             best_action_name = controller.get_action_name(best_action)
-            print best_action_name
+            print(best_action_name)
 
             # Execute action and observe new state and immediate reward
             controller.execute_action(best_action)
             new_state = controller.get_screen()
             num_frames += 1
             reward = controller.get_reward(new_state)
-            print 'reward: %s' % reward
+            print('reward: %s' % reward)
             is_terminal = controller.is_gameover(new_state)
             score += reward
             new_state_processed = controller.get_preprocessed_screen(new_state)
@@ -219,15 +230,14 @@ def main():
                           state_processed, new_state_processed)
             state = new_state
             counter += 1
-            print
 
-            if TRAIN:
+            if args.train:
                 if len(current_history) == 4 and combined is not None:
-                    new_combined = combine_history(
-                        current_history).reshape((1, 4, WIDTH, HEIGHT))
+                    new_combined = combine_history(current_history).reshape(
+                        (1, 4, WIDTH, HEIGHT))
                     # Store experience in experiences
-                    experiences.append(
-                        (combined, best_action, reward, new_combined, is_terminal))
+                    experiences.append((combined, best_action, reward,
+                                        new_combined, is_terminal))
 
                 # Grab a minibatch sample from experiences
                 inputs = np.zeros((BATCH_SIZE, NUM_IMAGES, WIDTH, HEIGHT))
@@ -250,24 +260,39 @@ def main():
                             targets[j, action] = reward + DISCOUNT_FACTOR * \
                                 np.max(model.predict(state_t1))
                     train_start = time.time()
-                    print 'Loss: ', model.train_on_batch(inputs, targets)
-                    print 'Train Time: %f' % (time.time() - train_start)
+                    print('Loss: ', model.train_on_batch(inputs, targets))
+                    print('Train Time: %f' % (time.time() - train_start))
 
         # Linearly decay epsilon
         if epsilon >= EPSILON_MIN:
-            epsilon -= ((1-0.1)/NUM_EPISODES)
-        print 'epsilon = %f' % epsilon
+            epsilon -= ((1 - 0.1) / NUM_EPISODES)
+        print('epsilon = %f' % epsilon)
 
         scores.append(str(score))
         scores_file.write(str(score) + '\n')
-        print 'Score: %d' % score
+        print('Score: %d' % score)
 
         if i % CHECKPOINT_INTERVAL == 0:
-            print 'Saving model so far...'
+            print('Saving model so far...')
             model.save('model.h5')
-        print 'Time elapsed: %f (mins)' % ((time.time() - begin_time)/60.0)
-        print 'Number of frames captured: %d' % num_frames
+        print('Time elapsed: %f (mins)' % ((time.time() - begin_time) / 60.0))
+        print('Number of frames captured: %d' % num_frames)
 
 
 if __name__ == '__main__':
-    main()
+    parser = argparse.ArgumentParser(description="Runs 8-bit-racer agent")
+    parser.add_argument(
+        '-train',
+        type=bool,
+        default=False,
+        help=
+        "Whether to train the agent or just run inference on the saved model")
+    parser.add_argument(
+        '-model_file',
+        type=str,
+        default=None,
+        help=
+        "If specified, resumes from a stored model file. Otherwise creates a model file at default model.h5"
+    )
+    args = parser.parse_args()
+    main(args)

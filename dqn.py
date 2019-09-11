@@ -1,7 +1,7 @@
 from keras.models import Sequential
-from keras.layers import Dense, Activation, Flatten
+from keras.layers import Dense, Flatten, Conv2D
 from keras.optimizers import RMSprop
-from keras.layers.convolutional import Convolution2D
+
 
 def build_model(input_shape, num_actions):
     """Builds a DQN as per the DeepMind architecture, which is a
@@ -11,28 +11,26 @@ def build_model(input_shape, num_actions):
     """
     model = Sequential()
     # 32 8x8 filters with stride 4
-    model.add(Convolution2D(32, 8, 8, subsample=(4, 4), \
-	border_mode='same', input_shape=input_shape))
-    # Followed by a RELU
-    model.add(Activation('relu'))
+    model.add(
+        Conv2D(32, (8, 8),
+               strides=(4, 4),
+               padding='same',
+               activation='relu',
+               input_shape=input_shape))
 
     # 64 4x4 filters with stride 2
-    model.add(Convolution2D(64, 4, 4, subsample=(2, 2), \
-	border_mode='same'))
-    # Followed by a RELU
-    model.add(Activation('relu'))
+    model.add(
+        Conv2D(64, (4, 4), strides=(2, 2), padding="same", activation="relu"))
 
     # 64 3x3 filters with stride 1
-    model.add(Convolution2D(64, 3, 3, subsample=(1, 1), \
-            border_mode='same'))
+    model.add(
+        Conv2D(64, (3, 3), strides=(1, 1), padding="same", activation="relu"))
 
-    # Followed by a RELU
-    model.add(Activation('relu'))
     model.add(Flatten())
+
     # Fully connected 512 neurons
-    model.add(Dense(512))
-    # Followed by a RELU
-    model.add(Activation('relu'))
+    model.add(Dense(512, activation="relu"))
+
     # Output nodes, one per action
     model.add(Dense(num_actions))
 
