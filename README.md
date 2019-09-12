@@ -4,6 +4,8 @@
 1. [Android SDK ](https://developer.android.com/studio/index.html)
   - Platform Tools and SDK Tools
   - Android API 21 Intel x86\_64 Image, i.e: "system-images;android-21;default;x86\_64"
+    Note avd.sh will try to download the system image and create the avd for you, but if this
+    doesn't work, you can try using Android Studio to manually download and create the image and avd.
 2. Tested on python 3.6.8
 
 ## How to run
