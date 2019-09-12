@@ -160,7 +160,7 @@ def save_sars(episode_num, counter, best_action_name, q_sa, reward,
     new_state_processed.save('screens/%d-%d-1.png' % (episode_num, counter))
 
 
-def run_episode(controller, model, episode_num, epsilon):
+def run_episode(train, controller, experiences, model, episode_num, epsilon):
     print('Episode: %d' % episode_num)
 
     state = controller.get_screen()
@@ -180,7 +180,7 @@ def run_episode(controller, model, episode_num, epsilon):
                 (1, 4, WIDTH, HEIGHT))
 
         # Select action based on epsilon-greedy (random or Q*)
-        if ((random.random() < epsilon) and args.train) or (combined is None):
+        if ((random.random() < epsilon) and train) or (combined is None):
             print('Selecting random action')
             best_action = random.randint(0, controller.num_actions - 1)
         else:
@@ -220,20 +220,20 @@ def run_episode(controller, model, episode_num, epsilon):
             # Grab a minibatch sample from experiences
             if len(experiences) >= BATCH_SIZE:
                 inputs = np.zeros((BATCH_SIZE, NUM_IMAGES, WIDTH, HEIGHT))
-                targets = np.zeros((BATCH_SIZE, NUM_ACTIONS))
+                targets = np.zeros((BATCH_SIZE, controller.num_actions))
                 samples = random.sample(experiences, BATCH_SIZE)
 
                 for j, sample in enumerate(samples):
-                    state, action, reward, next_state, is_terminal = sample
-                    inputs[j] = state
+                    s1, action, reward, s2, is_terminal = sample
+                    inputs[j] = s1
                     # Set target equal to final reward if terminal or immediate plus
                     # discount * max_{a'} Q*
-                    targets[j] = model.predict(state)
+                    targets[j] = model.predict(s1)
                     if is_terminal:
                         targets[j, action] = reward
                     else:
                         targets[j, action] = reward + DISCOUNT_FACTOR * \
-                            np.max(model.predict(next_state))
+                            np.max(model.predict(s2))
                 train_start = time.time()
                 print('Loss: ', model.train_on_batch(inputs, targets))
                 print('Train Time: %f' % (time.time() - train_start))
@@ -257,7 +257,7 @@ def main(args):
     # Initialize experience-replay: stores tuples (s, a, r, s')
     experiences = deque([], MAX_EXPERIENCES)
     # Initialize Q* with random weights
-    epsilon = START_EPSILON
+    epsilon = args.epsilon
 
     # Stats to keep track of.
     scores = []
@@ -266,9 +266,8 @@ def main(args):
 
     for episode_num in range(NUM_EPISODES):
         controller.restart_game()
-
-        score, num_frames = run_episode(controller, model, episode_num,
-                                        epsilon)
+        score, num_frames = run_episode(args.train, controller, experiences,
+                                        model, episode_num, epsilon)
 
         # Linearly decay epsilon
         if epsilon >= EPSILON_MIN:
@@ -291,17 +290,26 @@ def main(args):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Runs 8-bit-racer agent")
     parser.add_argument(
-        '-train',
-        type=bool,
+        '--train',
+        dest='train',
+        action='store_true',
         default=False,
         help=
         "Whether to train the agent or just run inference on the saved model")
     parser.add_argument(
-        '-model_file',
+        '--model_file',
         type=str,
         default=None,
         help=
         "If specified, resumes from a stored model file. Otherwise creates a model file at default model.h5"
     )
+    parser.add_argument(
+        '--epsilon',
+        type=float,
+        default=START_EPSILON,
+        help=
+        "Starting epsilon value for epsilon greedy training. If train is False, this does nothing."
+    )
+
     args = parser.parse_args()
     main(args)
