@@ -1,5 +1,7 @@
 # 8-bit-racer - Deep RL Agent for Android
 
+![](img/8-bit-racer.gif)
+
 ## Dependencies
 1. [Android SDK ](https://developer.android.com/studio/index.html)
   - Platform Tools and SDK Tools
