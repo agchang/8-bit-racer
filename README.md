@@ -12,7 +12,7 @@
   - If you have issues getting the emulator to run like I do, due to issues with having both the Android Studio managed SDK
     and the command line tools downloaded separately, you can specify an environment variable to point at an emulator path, i.e.:
     EMULATOR\_PATH=~/Android/Sdk/emulator/emulator ./avd.sh
-2. python 8-bit-racer.py
+2. python eight\_bit_\racer.py
 
 ## Model & Details
 - The pre-trained model is already the default model (model.h5) and also present in the models/ directory.
