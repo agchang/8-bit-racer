@@ -15,11 +15,10 @@
   - If you have issues getting the emulator to run like I do, due to issues with having both the Android Studio managed SDK
     and the command line tools downloaded separately, you can specify an environment variable to point at an emulator path, i.e.:
 
-    `EMULATOR_PATH=~/Android/Sdk/emulator/emulator ./avd.sh`
-2. `python eight_bit_racer.py`
+2.  `python eight_bit_racer.py -model_file=models/model-13k.h5`
+  - By default, training will be disabled so the agent will select actions from the stored model. To train, specify the --train flag.
 
 ## Model & Details
-- The pre-trained model is already the default model (model.h5) and also present in the models/ directory.
 - dqn.py defines the CNN architecture
 - adb.py provides a utility class for interacting with the emulator
 - eight\_bit\_racer.py contains the training algorithm
