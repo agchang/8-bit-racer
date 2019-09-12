@@ -1,5 +1,7 @@
 #!/bin/bash
 
+EMULATOR_PATH=${EMULATOR_PATH:="emulator"}
+
 check_for_sdk_tools() {
   if ! command -v avdmanager; then
     echo "Missing 'avdmanager' tool, please download the Android SDK!"
@@ -28,7 +30,7 @@ create_avd_if_necessary() {
 
 # Starts the emulator and waits for boot completion.
 start_avd() {
-  nohup ~/Android/Sdk/emulator/emulator -avd 8_bit_racer &
+  nohup $EMULATOR_PATH -avd 8_bit_racer &
   local booted
   while [[ -z "${booted}" || "${booted}" != 1 ]]; do
     booted="$(adb shell getprop dev.bootcomplete | tr -d '\r\n')"

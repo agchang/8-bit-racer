@@ -7,7 +7,11 @@
 2. Tested on python 3.6.8
 
 ## How to run
-1. ./avd.sh
+1. Run the Android emulator 
+  - ./avd.sh
+  - If you have issues getting the emulator to run like I do, due to issues with having both the Android Studio managed SDK
+    and the command line tools downloaded separately, you can specify an environment variable to point at an emulator path, i.e.:
+    EMULATOR\_PATH=~/Android/Sdk/emulator/emulator ./avd.sh
 2. python 8-bit-racer.py
 
 ## Model & Details
