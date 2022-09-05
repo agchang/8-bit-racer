@@ -1,4 +1,5 @@
 import os
+import time
 import subprocess
 
 
@@ -12,15 +13,19 @@ class ADB(object):
         Note you should use self.shell_interactive for commands that
         need to be sent in rapid succession.
         """
-        cmds = ['adb', 'shell', cmd]
+        cmds = ["adb", "shell", cmd]
         return subprocess.check_output(cmds)
 
     def open_shell(self):
         """Opens an interactive shell and keeps it the pipe open for
         interactive commands."""
-        cmds = ['adb', 'shell']
-        proc = subprocess.Popen(cmds, stdin=subprocess.PIPE, \
-            stdout=open(os.devnull, 'wb'), stderr=subprocess.PIPE)
+        cmds = ["adb", "shell"]
+        proc = subprocess.Popen(
+            cmds,
+            stdin=subprocess.PIPE,
+            stdout=open(os.devnull, "wb"),
+            stderr=subprocess.PIPE,
+        )
         self.adb_process = proc
 
     def shell_interactive(self, cmd):
@@ -28,8 +33,9 @@ class ADB(object):
         should be used for time-sensitive commands."""
         if self.adb_process is None:
             raise Exception("shell wasn't opened first!")
-        #print cmd
-        self.adb_process.stdin.write(cmd.encode() + '\n'.encode())
+        # print cmd
+        self.adb_process.stdin.write(cmd.encode() + "\n".encode())
+        time.sleep(0.1)
         self.adb_process.stdin.flush()
 
     def close_shell(self):

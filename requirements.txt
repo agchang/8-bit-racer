@@ -1,9 +1,5 @@
-Keras == 2.2.5
-
+#Keras == 2.2.5
 matplotlib == 1.5.3
-
 numpy == 1.16.5
-
 Pillow == 6.1.0
-
-tensorflow == 1.14.0
+#tensorflow == 1.14.0

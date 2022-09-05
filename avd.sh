@@ -21,8 +21,8 @@ check_for_sdk_tools() {
 
 create_avd_if_necessary() {
   if ! avdmanager list avd | grep '8_bit_racer' > /dev/null; then
-    sdkmanager "system-images;android-21;default;x86_64"
-    avdmanager create avd -d 20 -k 'system-images;android-21;default;x86_64' --name 8_bit_racer
+    sdkmanager "system-images;android-21;default;arm64-v8a"
+    avdmanager create avd -d 34 -k 'system-images;android-21;default;arm64-v8a' --name 8_bit_racer
   else
     echo "Found existing avd."
   fi
